@@ -1,0 +1,70 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\hypersetup{
+  bookmarksnumbered,
+  bookmarksopen,
+  bookmarksopenlevel=0,
+  colorlinks,
+% for colors, check package xcolor
+%   anchorcolor=anchorcolor,
+    citecolor=blue,
+%   linkcolor=linkcolor,
+	pdfauthor={Rodrigo Azuero Melo},
+	pdftitle={Evaluating Early Childhood Interventions},
+	pdfsubject={},
+	pdfkeywords={},
+%   plainpages=false,
+%   urlcolor=urlcolor
+}
+
+\title{Class 2}
+\author{Rodrigo Azuero }
+\date{December 2018}
+
+\begin{document}
+\maketitle
+In this section we will cover, some basics of R, a review of Ordinary Least Squares (OLS), and maximum likelihoood estimation.
+
+
+\section{R Basics}
+R is a programming language and a software environment. It is free, with an active community developing packages and improvements continuously. The purpose of this tutorial is not to cover all the features of R but rather to give you a basic understanding of the programming language and some novel things you can do with this software. 
+\subsection{Installing R}
+You will need to install R and Rstudio. Rstudio is an integrated development environment (IDE) for the programming language R. 
+\begin{enumerate}
+    \item Install R from \href{https://cran.r-project.org/}{https://cran.r-project.org}
+    \item Install R Studio from \href{https://www.rstudio.com/products/rstudio/download/}{https://www.rstudio.com/products/rstudio/download/}
+\end{enumerate}
+Once you have installed R and Rstudio, you are ready to run some code. 
+\section{OLS Basics}
+The goal of OLS is to fit a linear function to the data by minimizing the sum of squared errors. Suppose we have data on wages, denoted by $y_i$, for $n$ individuals:
+\begin{equation}
+    Y_{n\times 1}=\begin{bmatrix} y_1\\ y_2 \\ \vdots \\ y_n \end{bmatrix}
+\end{equation}
+We also have information on individuals' years of schooling $(X_1)_{n\times1}$ and age $(X_2)_{n\times1}$ and we want to analyze the relationship between education, age, and wages. For each individual, our predicted wage  will be:
+\begin{equation}
+    \hat y_i=\beta_0+\beta_1x_{1,i}+\beta_2 x_{2,i}
+\end{equation}
+The goal in OLS is to minimize the sum of squared errors. That is, we want to find $\beta_0,\beta_1,\beta_2$ that minimize the following loss function defined in Equation \ref{eq:lossOls}
+\begin{align}\label{eq:lossOls}
+    L(\beta_0,\beta_1,\beta_2;Y,X_1,X_2)= & \sum_{i=1}^n\left(y_i-\hat y_i\right)^2\nonumber \\[0.2in]
+    & = \sum_{i=1}^n\left(y_i-\beta_0-\beta_1x_{1,i}-\beta_2 x_{2,i}\right)^2
+\end{align}
+We will skip the derivation of the parameters $\beta_0,\beta_1,\beta_2$\footnote{If you are interested in the derivation you can check various textbooks. The Wikipedia entry includes some derivations} but it can be shown that:
+\begin{align}
+    \beta=\left(X'X\right)^{-1}\left(X'Y\right)
+\end{align}
+where:
+\begin{align}
+    X_{n\times 3}=\begin{bmatrix}X_0,X_1,X_2\end{bmatrix}
+\end{align}
+\begin{align}
+    (X_0)_{n\times 1}=\begin{bmatrix}1\\ 1\\ \vdots \\1\end{bmatrix}
+\end{align}
+\begin{align}
+    \beta=\left[\beta_0,\beta_1,\beta_2\right]
+\end{align}
+\section{MLE}
+
+\end{document}
