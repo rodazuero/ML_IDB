@@ -1,0 +1,448 @@
+---
+title: "Session 2"
+author: "Rodrigo Azuero"
+date: "January 10, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The goal of this session is to provide some tools in R and statistics for the rest of the sessions. 
+
+## 1. R Basics
+
+R is a programming language and a software environment. It is free, with an
+active community developing packages and improvements continuously. The
+purpose of this tutorial is not to cover all the features of R but rather to give
+you a basic understanding of the programming language and some novel things
+you can do with this software.
+
+### 1.1 Installing R 
+
+You will need to install R and Rstudio. Rstudio is an integrated development
+environment (IDE) for the programming language R.
+
+1. Install R from https://cran.r-project.org
+2. Install R Studio from https://www.rstudio.com/products/rstudio/download/
+
+
+Once you have installed R and Rstudio, you are ready to run some code. 
+
+### 1.2 R basics.
+
+
+Addition
+```{r}
+2+3
+```
+
+Division
+```{r}
+13/5
+```
+
+
+Logical comparissons
+```{r}
+3<4
+5==3
+(5+2)==7
+```
+
+Strings
+```{r}
+'This is a string'
+```
+
+Variables
+```{r}
+x=2
+x+4
+```
+
+Vectors and matrices
+```{r}
+x=c(1,2,3,4)
+x+2
+
+X<- matrix(c(1,2,3, 11,12,13, 5,6,75), nrow = 3, ncol = 3)
+X
+t(X)
+solve(X)
+```
+
+
+### 1.3 Data table
+Now we will install the package 'data.table'. This is a package commonly used for data handling. To install it in your computer you need to run the code "install.packages('data.table')". We will install it and learn the basics of how to use it. You can find more information with examples about the package `data.table' in [this link](https://cran.r-project.org/web/packages/data.table/vignettes/datatable-intro.html).
+
+
+```{r datatable}
+library(data.table)
+```
+
+Now we will open a dataset containing information about wages, years of schooling, and age of 800 individuals:
+```{r}
+WageD<-read.table("https://raw.githubusercontent.com/rodazuero/samplecode/master/CUDA/mle_mincer/DATACUDA.csv",sep = ",")
+WageD<-data.table(WageD)
+```
+
+Assigning the names to the WageD dataset:
+```{r}
+colnames(WageD)<-c('age','schooling','logwage')
+```
+
+
+and we are ready to start with some calculations and graph with the data. Let's compute the averages and standard deviations of our series:
+```{r}
+mean(exp(WageD$logwage))
+sd(exp(WageD$logwage))
+    
+mean(WageD$age)
+sd(WageD$age)
+    
+mean(WageD$schooling)
+sd(WageD$schooling)
+```
+
+Let's say we are interested in the median wages of people who have higher education and are under 50 years of age. How can we do this with `data.frame'?
+
+```{r}
+mean(exp(WageD[age < 50 & schooling > 12]$logwage))
+```
+
+
+Let's plot some relationships in the data. For this, we will use the package ggplot, which is one of the most popular packages for data visualization in R. You can find more resources about ggplot in [this link](https://ggplot2.tidyverse.org/). You first need to install the package by running
+"install.packages('ggplot2')""
+
+
+```{r}
+library(ggplot2)
+p <- ggplot(WageD, aes(logwage, schooling))
+p<-p + geom_point()
+p
+```
+
+Try to plot the relationship with exp(logwage), the actual wage, and see the differences in the relationship. Now, let's say we want to analyze the relationship between schooling and wages for people who are under 40 and those who are over 40.
+
+
+```{r}
+WageD$agegroup = cut(WageD$age,c(0,40,100))
+sizeT=1.5
+p <- ggplot(WageD, aes(logwage, schooling))
+p<- p+ geom_point(aes(colour = factor(agegroup)))
+p<-p + theme(
+        plot.title = element_text(size = rel(sizeT)),
+        axis.title=element_text(size = rel(sizeT)),
+        axis.text.x=element_text(size = rel(sizeT)),
+        axis.text.y=element_text(size = rel(sizeT)),
+        legend.text=element_text(size = rel(sizeT)),
+        panel.background = element_rect(fill="grey96"),
+        legend.key=element_blank(),
+        legend.title=element_blank())
+p<-p+xlab("log(wages)")
+p<-p+ylab("years of schooling")
+p
+```
+
+
+## 2. OLS Basics
+The goal of OLS is to fit a linear function to the data by minimizing the sum of squared errors. Suppose we have data on log-wages, denoted by $y_i$, for $n$ individuals:
+
+\begin{equation}
+    Y_{n\times 1}=\begin{bmatrix} y_1\\ y_2 \\ \vdots \\ y_n \end{bmatrix}
+\end{equation}
+
+
+We also have information on individuals' years of schooling $(X_1)_{n\times1}$ and age $(X_2)_{n\times1}$ and we want to analyze the relationship between education, age, and wages. For each individual, our predicted wage  will be:
+
+
+\begin{equation}
+    \hat y_i=\beta_0+\beta_1x_{1,i}+\beta_2 x_{2,i}
+\end{equation}
+The goal in OLS is to minimize the sum of squared errors. That is, we want to find $\beta_0,\beta_1,\beta_2$ that minimize the following loss function defined in Equation \ref{eq:lossOls}
+\begin{align}\label{eq:lossOls}
+    L(\beta_0,\beta_1,\beta_2;Y,X_1,X_2)= & \sum_{i=1}^n\left(y_i-\hat y_i\right)^2\nonumber \\[0.2in]
+    & = \sum_{i=1}^n\left(y_i-\beta_0-\beta_1x_{1,i}-\beta_2 x_{2,i}\right)^2
+\end{align}
+
+
+
+We will skip the derivation of the parameters $\hat \beta_0,\hat \beta_1,\hat \beta_2$\footnote{If you are interested in the derivation you can check various textbooks. The Wikipedia entry includes some derivations} but it can be shown that:
+\begin{align}
+    \hat \beta=\left(X'X\right)^{-1}\left(X'Y\right)
+\end{align}
+where:
+\begin{align}
+    X_{n\times 3}=\begin{bmatrix}X_0,X_1,X_2\end{bmatrix}
+\end{align}
+\begin{align}
+    (X_0)_{n\times 1}=\begin{bmatrix}1\\ 1\\ \vdots \\1\end{bmatrix}
+\end{align}
+\begin{align}
+   \hat \beta=\left[\hat \beta_0,\hat \beta_1,\hat \beta_2\right]
+\end{align}
+
+
+## 2.1 Code your own OLS
+Now that we know the basics of R programming language and how to derive the coefficient estimates for OLS, we will code our own OLS function.
+```{r}
+    n<-length(WageD$logwage)
+    X0<-rep(1,n)
+    X1<-WageD$age
+    X2<-WageD$schooling
+    Y<-WageD$logwage
+
+
+    X<-cbind(X0,X1,X2)
+
+    Beta<-(solve(t(X)%*%X))%*%(t(X)%*%Y)
+    Beta0<-Beta[1]
+    Beta1<-Beta[2]
+    Beta2<-Beta[3]
+```
+
+
+Compare your results with the coefficients obtained directly from the $lm$ function in R. We will not go through the derivation of the standard errors of the linear regression model. 
+
+
+```{r}
+mod<-lm(logwage~ age+schooling, WageD)
+print(coef(summary(mod)))
+```
+
+
+### 2.3 Code your own OLS advanced
+Now we will code our own OLS finding the coefficients that minimize a function that we will create which is the sum of squared errors.
+
+```{r}
+SSR<-function(Beta){
+  Pred<-Beta[1]+Beta[2]*WageD$age+Beta[3]*WageD$schooling
+  SR<-(WageD$logwage-Pred)^2
+  ans<-sum(SR)
+  return(ans)
+}
+
+BetaInic<-c(1,1,1)
+Parameters<-optim(BetaInic,SSR)
+Parameters$par
+```
+
+## 3. Maximum Likelihood Estimation
+
+Before going into the specifics of maximum likelihood estimation, let's review some basic concepts from statistics:
+
+
+Let $y$ and $x$ be continuous random variables with a joint probability. Let $f(y,x)$ denote the joint probability density function. Then:
+
+\begin{align}
+  &f(y|x)=  \frac{f(y,x)}{f(x)} \text{ Conditional pdf}\\[0.2in]
+  &f(y)=  \int_{-\infty}^{\infty}f(y,x)dx \text{ marginal pdf}\\[0.2in]
+  &f(y)\geq 0 \forall y\\[0.2in]
+  &\int_{-\infty}^{\infty}f(y)dy=1\\[0.2in]
+  &\int_{-\infty}^{\bar y}f(y)dy=F(\bar y)=P(y\leq \bar y) \text{ cumulative distribution function}\\[0.2in]
+  &\text{Do not interpred } f(y) \text{ as a probability!} \\[0.2in]
+  & y \text{ and} x \text{ are independent iif } f(y,x)=f(y)\times f(x)
+\end{align}
+
+### Bayes rule
+\begin{align}
+  f(y|x) & =\frac{f(y,x)}{f(x)} \\[0.2in]
+  \underbrace{f(y|x)}_{posterior} & =\frac{\underbrace{f(x|y)}_{likelihood}\underbrace{f(y)}_{prior}}{\underbrace{f(x)}_{evidence}}
+\end{align}
+
+Suppose the data $\{Data\}_{i=1}^n=\{Wage,age,schooling\}_{i=1}^n$ has a density $f(Data;\Theta)$. The density $f(.)$ is known up to a parameter $\Theta$. The joint density is given by $\bar f:$
+\begin{align}
+    \bar f(Data_1,Data_2,....,Data_n;\Theta)
+\end{align}
+If the data is i.i.d, the joint density can be written as the product of independent pdf's:
+\begin{align}
+    \bar f(Data_1,Data_2,....,Data_n;\Theta)=
+    f(Data_1;\Theta)\times f(Data_2;\Theta),...,f(Data_n;\Theta)
+\end{align}
+The likelihood function is the joint pdf but it is considered a function of the parameter $\Theta$ conditional on the data:
+\begin{align}
+    \mathcal{L}(\Theta,Data)=\prod_{i=1}^nf(Data_i;\Theta)
+\end{align}
+Caution: you cannot interpret the likelihood as the probability of observing the dataset conditional on a parameter. In continuous random variables the pdf is not the probability. 
+
+Let's assume that log-wages are determined according to the following model:
+\begin{align}\label{eq:individuallikelihood}
+    \text{logwage}_i=\beta_0+\beta_1\text{age}_i+\beta_2\text{yrschool}_i+\varepsilon_i
+\end{align}
+And consider the case where
+\begin{align}
+    \varepsilon_i\sim \mathcal{N}(0,\sigma^2)
+\end{align}
+Recall, the pdf of random variable $x$ following a normal distribution with mean $\mu$ and variance $\sigma^2$ is:
+\begin{align}
+    \phi(x;\mu,\sigma^2)=\frac{1}{\sqrt{2\pi \sigma^2}}e^{-\frac{1}{\sigma^2}\left(x-\mu\right)^2}
+\end{align}
+From Equation \ref{eq:individuallikelihood} we see that the pdf of logwages follows the distribution described in Equation \ref{eq:likelihood2}:
+\begin{align}\label{eq:likelihood2}
+    f(\text{logwage}_i;\text{age,yrschool,}\sigma^2)=\mathcal{N}\left(\beta_0+\beta_1\text{age}_i+\beta_2\text{yrschool}_i,\sigma^2\right)
+\end{align}
+Then the joint likelihood becomes:
+\begin{align}
+    \mathcal{L}(\Theta;Data)=\prod_{i=1}^n(f(\text{logwage})_i;\beta,\sigma^2)
+\end{align}
+Likelihood functions are usually very close to zero. For computational precission, we usually work with the log-likelihood function. 
+\begin{align}
+    l(\Theta;Data)= & \ln\left(\mathcal{L}(\Theta;Data)\right)\nonumber \\[0.2in]
+    & = \sum_{i=1}^nln(f(\text{logwage})_i;\beta,\sigma^2)
+\end{align}
+where all the parameters $\Theta=\left[\beta_0,\beta_1,\beta_2,\sigma^2 \right]$
+
+The maximum likelihood estimator: $\Theta_{\text{MLE}}=\left[\beta_0,\beta_1,\beta_2,\sigma^2\right]$ is:
+\begin{align}\label{eq:lastmle}
+    \Theta_{\text{MLE}}=\arg max_{\Theta} l(\Theta;Data)
+\end{align}
+
+
+\subsection{MLE in R}
+In this section we will compute the Maximum Likelihood estimators of the model described in Equations \ref{eq:individuallikelihood} - \ref{eq:lastmle}. First, we define the likelihood function of each individual observation. This is an intuitive, but computationally slow, way of defining the likelihood function
+```{r}
+Likelihood<-function(Theta){
+  bbeta0<-Theta[1]
+  bbeta1<-Theta[2]
+  bbeta2<-Theta[3]
+  ssigma<-exp(Theta[4])
+  
+  loglik=0;
+  for(i in 1:n){
+    predlogwage<-bbeta0+bbeta1*WageD$age[i]+bbeta2*WageD$schooling[i]
+    yobserved<-WageD$logwage[i]
+    error<-yobserved-predlogwage
+    loglikelihood=log(dnorm(error,mean=0,sd=(ssigma)))
+    loglik=loglik+loglikelihood
+  }
+  loglik=-loglik
+  return(loglik)
+  
+}
+```
+
+Once defined the (negative) of the likelihood function, we find the parameters that maximize (minimize the negative):
+```{r}
+Theta<-c(1,1,1,1)
+Likelihood(Theta)
+Parameters<-optim(Theta,Likelihood)
+Parameters
+```
+
+
+*Challenge homework 1: Prove that the maximum likelihood estimator is the same as the OLS estimator*. 
+
+## Bayesian classification
+
+
+
+Let's consider the problem of a spam classifier. We will use a Bayesian classifier to construct a spam classifier using real emails from the "Spambase Data set" available in the Machine Learning Repository from the Center for Machine Learning and Intelligent Systems at the University of California Irvine. 
+
+We downlowad the dataset following this command:
+
+The dataset contains 59 columns. The first 58 columns indicate the occurrence of a word or a character. For instance 
+
+Now, let's consider the problem of predicitng wether or not an email is spam based on the observed characteristics. Let $y_i$ be a discrete variable taking the value of zero if email $i$ is spam, and zero otherwise. 
+
+\begin{align}
+  y_i=
+  \begin{cases}
+    0 \text{ if email $i$ is no spam} \\
+    1 \text{if email $i$ is spam}
+  \end{cases}
+\end{align}
+
+For each email $i$ we observe the occurrence of various words and characters. We call these features $x_i=\left[x_i^1,x_i^2,....x_i^p \right]$ where 
+
+\begin{align}
+  x_i^p=
+  \begin{cases}
+    0 \text{ if email $i$ does not containt feature $p$} \\
+    1 \text{if email $i$ contains feature $p$}
+  \end{cases}
+\end{align}
+
+
+We are interested in predicting the probability of an email being spam or not based on the occurrence of several features: $ f(y_i|x_i)$
+
+Recall that: 
+\begin{align}
+  \underbrace{f(y_i|x_i)}_{posterior} & =\frac{\underbrace{f(x_i|y_i)}_{likelihood}\underbrace{f(y_i)}_{prior}}{\underbrace{f(x_i)}_{evidence}}
+\end{align}
+
+The "Naive Bayes classifier" assumes indpeendence between features. Note that if $x_1$ and $x_2$ are independent: 
+\begin{align}
+  f(x_i^1,x_i^2|y)=f(x_i^1|x_i^2,y)\times f(x_i^2|y)=f(x_i^1|y)\times f(x_i^2|y)
+\end{align}
+
+Repeating a similar procedure for $x$, we can see that the likelihood can be expressed as:
+
+\begin{align}
+  f(x_1,x_2,....x_p|y)=f(x_1|y)\times f(x_2|y)\times .... \times f(x_p|y)=\prod_{j=1}^p f(x_i|p)
+\end{align}
+
+With this in mind, the posterior can be expressed as:
+\begin{align}
+  f(y_i|x_i)=\frac{f(y_i)\times \prod_{j=1}^p f(x_i|p)}{f(x_i)} \propto f(y_i)\times\prod_{j=1}^p f(x_i|y)
+\end{align}
+
+The $\propto$ symbol denotes proportionallity and is used commonly in Bayesian statistics as the term $f(x_i|p)$ is not something we need to worry when estimating our parameters of interest. The goal of the Bayesian classifier is to obtain a classifier by maximizing the posterior probability. That is:
+\begin{align}
+  \hat y_i=h(x_i)=\arg \max_y f(y_i)\times\prod_{j=1}^p f(x_i^j|y)
+\end{align}
+
+
+We need to estimate two elements: the likelihood function $\prod_{j=1}^p f(x_i^j|y)$ and the prior $f(y_i)$. In our example, we observe that 39% of emails are spam, then we estimate that the probability of an e-mail being spam is 0.39 and the probability of an email not being spam is 0.61. We let $y$ follow a Bernoulli distribution:
+$f(y)=0.39^{y}\times(1-0.39)^{(1-y)}$
+
+Now we need estimates of our likelihood function. In the wages example we showed how to estiamte $f(x_i^j|p)$ through maximum likelihood if we assume a normal distribution. 
+
+\begin{align}
+  f(x_i^j|y)=\frac{1}{\sqrt{2\pi}\sigma^2}e^{-\frac{\left(x_i^j-\mu_{j,y}\right)^2}{\sigma_y^2}}
+\end{align}
+
+In this case, however, the normal assumption does not fit. We have zero, one variables depending on the occurence. We are going to assume a Bernoulli distribution. Before going into the specifics of this pdf, let's define:
+
+\begin{align}
+ \theta_{j,y} : \text{ the probability that in an email of type $y$, the feature $j$ is observed.}  
+\end{align}
+
+For instance, if  $\theta_{1,0}=0.4$ it means that in non-spam emails $(y=0)$ the probability of observing the feature 1, which corresponds to the word "make" is 0.4. Then, the likelihood of a given feature, for one observation, can be expressed as: 
+
+\begin{align}
+  f(x_i^j|y)=\theta_{j,y}^{x_i^j}\times(1-\theta_{j,y})^{(1-x_i^j)}
+\end{align}
+
+Under the assumption of independence across observations, we know that:
+\begin{align}
+  f(x^j|y)=f(x_1^j,x_2^j,....x_n^j|y)=\prod_{i=1}^nf(x_i^j|y)=\theta_{j,y}^{x_i^j}\times(1-\theta_{j,y})^{(1-x_i^j)}
+\end{align}
+The maximum likelihood estimator of $\theta_{j,y}^{x_i^j}$ corresponds to the proportion of emails in the category $y$ such that the feature $j$ is observed. For instance, 84\% of spam emails contain the exclamation point, which corresponds to feature "2". This means that $\theta_{2,1}=0.84$. 
+
+**Challenge: prove that the maximum likelihood estiamte of $\theta_{j,y}$ corresponds to the proportion of emails in category $y$ that contain the feature $j$.**
+
+
+Let's now run our Bayesian classifier. 
+
+
+## 2. R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
